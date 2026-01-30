@@ -3,43 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Parallax Art</title>
+    <title>Modern Boy's Red Roof House</title>
     <style>
+        /* 1. 전체 화면 설정 */
         body {
             margin: 0;
             padding: 0;
             height: 100vh;
-            overflow: hidden;
-            background-color: #f4f1ea;
+            overflow: hidden; /* 스크롤 방지 */
+            background-color: #f4f1ea; /* 작가님의 미색 배경 */
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: sans-serif;
+            font-family: 'Apple SD Gothic Neo', sans-serif;
         }
 
-        /* 그림 컨테이너 */
+        /* 2. 그림을 담는 액자 (화면 중앙 정렬) */
         .art-container {
             position: relative;
             width: 100%;
             height: 100%;
+            max-width: 800px; /* PC에서 너무 커지지 않게 제한 */
             overflow: hidden;
         }
 
-        /* 레이어 공통 스타일 */
+        /* 3. 레이어 공통 스타일 (겹쳐짐 문제 해결) */
         .layer {
             position: absolute;
-            top: -10%;      /* 여백을 줘서 움직일 때 빈 공간 안 보이게 */
-            left: -10%;
-            width: 120%;    /* 화면보다 커야 움직여도 안 잘림 */
-            height: 120%;
-            background-position: center;
+            top: -5%;  /* 움직일 때 빈 공간 안 보이게 여유분 */
+            left: -5%;
+            width: 110%; /* 화면보다 살짝 크게 */
+            height: 110%;
+            
+            /* ⭐ 핵심: 작가님 그림 비율 그대로 유지하며 중앙 정렬 ⭐ */
+            background-size: contain; 
+            background-position: center; 
             background-repeat: no-repeat;
-            background-size: cover; /* 혹은 contain */
-            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 부드러운 감속 */
+            
+            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             will-change: transform;
         }
 
-        /* --- 이미지 경로 설정 --- */
+        /* 4. 이미지 경로 (파일명을 정확히 맞춰주세요) */
         .bg { 
             background-image: url('bg.png'); 
             z-index: 1; 
@@ -53,83 +58,103 @@
             z-index: 3; 
         }
 
-        /* iOS 권한 요청 버튼 (처음엔 보임) */
+        /* 5. 아이폰용 권한 버튼 */
         #permissionBtn {
             position: absolute;
             z-index: 100;
-            background: #5a3e36;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #a63737; /* 빨간 지붕색 포인트 */
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 30px;
-            font-size: 1.2rem;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: opacity 0.3s;
         }
     </style>
 </head>
 <body>
 
-    <div class="art-container">
-        <div class="layer bg" data-speed="2"></div>   <div class="layer mid" data-speed="5"></div>  <div class="layer fore" data-speed="10"></div> </div>
+    <div class="art-container" id="artContainer">
+        <div class="layer bg" data-speed="2"></div>
+        <div class="layer mid" data-speed="4"></div>
+        <div class="layer fore" data-speed="8"></div>
+    </div>
 
-    <button id="permissionBtn">작품 감상하기 (Touch)</button>
+    <button id="permissionBtn">작품 입장하기 (Touch)</button>
 
     <script>
         const btn = document.getElementById('permissionBtn');
         const layers = document.querySelectorAll('.layer');
+        const container = document.getElementById('artContainer');
 
-        // 1. 센서 데이터 처리 함수
-        function handleOrientation(event) {
-            // beta: 앞뒤 기울기 (-180 ~ 180) -> Y축
-            // gamma: 좌우 기울기 (-90 ~ 90) -> X축
-            const x = event.gamma; 
-            const y = event.beta;  
-
-            // 각도가 너무 크면 제한 (최대 45도까지만 반응)
-            // 모바일에서 너무 휙휙 돌아가는 것 방지
-            const limitedX = Math.max(-45, Math.min(45, x));
-            const limitedY = Math.max(-45, Math.min(45, y));
-
+        // --- 기능 1: 그림 움직이는 함수 (PC/모바일 공용) ---
+        function moveLayers(x, y) {
             layers.forEach(layer => {
                 const speed = layer.getAttribute('data-speed');
-                
-                // 움직임 계산 (반대 방향으로 움직여야 깊이감이 생김)
-                // speed 값을 곱해서 레이어마다 다르게 이동
-                const xMove = -(limitedX * speed * 0.5); 
-                const yMove = -(limitedY * speed * 0.5); 
-
+                // 반대 방향(-)으로 움직여야 깊이감이 생김
+                const xMove = -(x * speed); 
+                const yMove = -(y * speed);
                 layer.style.transform = `translate(${xMove}px, ${yMove}px)`;
             });
         }
 
-        // 2. 권한 요청 및 이벤트 연결 (iOS 13+ 대응)
+        // --- 기능 2: 모바일 (자이로스코프 센서) ---
+        function handleOrientation(event) {
+            // gamma: 좌우(-90~90), beta: 앞뒤(-180~180)
+            const x = event.gamma; 
+            const y = event.beta;  
+            
+            // 각도 제한 (너무 휙휙 돌지 않게)
+            if (x && y) {
+                const limitedX = Math.max(-40, Math.min(40, x));
+                const limitedY = Math.max(-40, Math.min(40, y));
+                moveLayers(limitedX * 0.5, limitedY * 0.5); // 0.5는 감도 조절
+            }
+        }
+
+        // --- 기능 3: PC (마우스 움직임) ---
+        container.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth / 2 - e.pageX) / 20;
+            const y = (window.innerHeight / 2 - e.pageY) / 20;
+            moveLayers(x, y);
+        });
+
+        // --- 기능 4: 아이폰 권한 요청 (핵심) ---
         function requestAccess() {
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                // iOS 13 이상
+            // 버튼 숨기기 효과
+            btn.style.opacity = '0';
+            setTimeout(() => { btn.style.display = 'none'; }, 300);
+
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                // iOS 13+ 권한 요청
                 DeviceOrientationEvent.requestPermission()
                     .then(permissionState => {
                         if (permissionState === 'granted') {
                             window.addEventListener('deviceorientation', handleOrientation);
-                            btn.style.display = 'none'; // 허용되면 버튼 숨기기
                         } else {
-                            alert('센서 권한을 허용해야 그림이 움직입니다.');
+                            alert('센서 권한을 허용해주세요!');
                         }
                     })
                     .catch(console.error);
             } else {
-                // 안드로이드 및 구형 iOS (권한 필요 없음)
+                // 안드로이드 및 PC
                 window.addEventListener('deviceorientation', handleOrientation);
-                btn.style.display = 'none';
             }
         }
 
-        // 버튼 클릭 시 권한 요청 실행
         btn.addEventListener('click', requestAccess);
-
-        // (옵션) 안드로이드는 버튼 안 눌러도 시작되게 시도
-        if (typeof DeviceOrientationEvent.requestPermission !== 'function') {
-            requestAccess();
+        
+        // 안드로이드는 자동 실행 시도
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') {
+             window.addEventListener('deviceorientation', handleOrientation);
+             // 안드로이드는 버튼 바로 숨김
+             btn.style.display = 'none';
         }
     </script>
 </body>
