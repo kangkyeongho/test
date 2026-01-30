@@ -3,86 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Modern Boy's Red Roof House</title>
+    <title>Modern Boy's Art</title>
     <style>
-        /* 1. 전체 화면 설정 */
+        /* 1. 화면 기본 설정 */
         body {
             margin: 0;
             padding: 0;
             height: 100vh;
-            overflow: hidden;
-            background-color: #f4f1ea;
+            overflow: hidden; /* 스크롤 방지 */
+            background-color: #f4f1ea; /* 배경색 */
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Apple SD Gothic Neo', sans-serif;
+            font-family: sans-serif;
         }
 
-        /* 2. 그림 액자 */
         .art-container {
             position: relative;
             width: 100%;
             height: 100%;
-            max-width: 800px;
+            max-width: 800px; /* PC에서 너무 커짐 방지 */
             overflow: hidden;
         }
 
-        /* 3. 레이어 공통 스타일 */
+        /* 2. 그림 레이어 스타일 */
         .layer {
             position: absolute;
-            top: -20%;
-            left: -20%;
-            width: 140%;
-            height: 140%;
+            /* 움직일 여백 확보를 위해 120%로 설정 */
+            width: 120%;
+            height: 120%;
+            top: -10%;  /* 중앙 정렬 보정 */
+            left: -10%;
             
-            /* ⭐ 수정됨: 바닥을 기준으로 정렬 (긴 그림 깨짐 방지) ⭐ */
+            /* ⭐ 가로 폭을 화면에 딱 맞춤 (너무 확대되는 것 방지) ⭐ */
             background-size: 100% auto; 
+            
+            /* 그림 위치: 중앙 기준 */
             background-position: center; 
             background-repeat: no-repeat;
             
-            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 반응 속도 살짝 늦춰서 더 부드럽게 */
+            /* 움직임 부드럽게 */
+            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             will-change: transform;
         }
 
-        /* 4. 이미지 경로 */
+        /* 3. 이미지 파일 연결 (파일명 정확히!) */
         .bg { background-image: url('bg.png'); z-index: 1; }
         .mid { background-image: url('mid.png'); z-index: 2; }
         .fore { background-image: url('fore.png'); z-index: 3; }
 
-        /* 5. 버튼 스타일 */
+        /* 4. 입장 버튼 스타일 */
         #permissionBtn {
             position: absolute;
-            z-index: 100;
+            z-index: 9999; /* 제일 위에 오도록 설정 */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: #a63737;
+            
+            background-color: #a63737; /* 버튼 색 */
             color: white;
             border: none;
             padding: 15px 40px;
             border-radius: 50px;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            transition: opacity 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            
+            /* 터치 영역 확보 */
+            min-width: 200px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
     <div class="art-container" id="artContainer">
-        <div class="layer bg" data-speed="1"></div>   <div class="layer mid" data-speed="2"></div>  <div class="layer fore" data-speed="4"></div> </div>
+        <div class="layer bg" data-speed="1"></div>
+        <div class="layer mid" data-speed="2"></div>
+        <div class="layer fore" data-speed="4"></div>
+    </div>
 
-    <button id="permissionBtn">들어가기(Touch)</button>
+    <button id="permissionBtn" type="button">작품 입장하기 (Click)</button>
+
+    <audio id="bgm" loop>
+        <source src="music.mp3" type="audio/mp3">
+    </audio>
 
     <script>
+        // 변수 가져오기
         const btn = document.getElementById('permissionBtn');
         const layers = document.querySelectorAll('.layer');
         const container = document.getElementById('artContainer');
-	const bgm = document.getElementById('bgm'); // 음악 플레이어 가져오기
+        const bgm = document.getElementById('bgm');
 
-        // 움직임 처리 함수
+        // 1. 음악 페이드 인 함수
+        function fadeInAudio(audio) {
+            try {
+                audio.volume = 0;
+                const playPromise = audio.play();
+                
+                // 브라우저 정책상 재생 실패할 경우 대비
+                if (playPromise !== undefined) {
+                    playPromise.then(_ => {
+                        // 재생 성공 시 볼륨 올리기
+                        let vol = 0;
+                        const interval = setInterval(() => {
+                            if (vol < 0.8) {
+                                vol += 0.05;
+                                audio.volume = vol;
+                            } else {
+                                clearInterval(interval);
+                            }
+                        }, 200);
+                    }).catch(error => {
+                        console.log("음악 재생 실패(파일 경로 확인): " + error);
+                    });
+                }
+            } catch (e) {
+                console.log("오디오 오류: " + e);
+            }
+        }
+
+        // 2. 그림 움직임 계산 함수
         function moveLayers(x, y) {
             layers.forEach(layer => {
                 const speed = layer.getAttribute('data-speed');
@@ -91,52 +134,35 @@
                 layer.style.transform = `translate(${xMove}px, ${yMove}px)`;
             });
         }
-	// 음악이 서서히 켜지는 함수
-function fadeInAudio(audio) {
-    audio.volume = 0; // 0에서 시작
-    audio.play();
-    let vol = 0;
-    const interval = setInterval(() => {
-        if (vol < 0.8) {
-            vol += 0.05;
-            audio.volume = vol;
-        } else {
-            clearInterval(interval);
-        }
-    }, 200);
-}
 
-        // 모바일 센서 처리
+        // 3. 모바일 센서 처리 함수
         function handleOrientation(event) {
-            const x = event.gamma; 
-            const y = event.beta;  
+            const x = event.gamma; // 좌우 기울기
+            const y = event.beta;  // 앞뒤 기울기
             
-            if (x && y) {
-                // 각도 제한
-                const limitedX = Math.max(-40, Math.min(40, x));
-                const limitedY = Math.max(-40, Math.min(40, y));
-                
-                // ⭐ 수정됨: 0.5 -> 0.15 (센서 민감도를 확 낮춤) ⭐
-                // 이제 폰을 많이 기울여야 조금 움직입니다.
-                moveLayers(limitedX * 0.25, limitedY * 0.25); 
+            if (x !== null && y !== null) {
+                const limitedX = Math.max(-45, Math.min(45, x));
+                const limitedY = Math.max(-45, Math.min(45, y));
+                moveLayers(limitedX * 0.15, limitedY * 0.15); // 감도 0.15
             }
         }
 
-        // PC 마우스 처리
+        // 4. PC 마우스 처리 함수
         container.addEventListener('mousemove', (e) => {
-            // ⭐ 수정됨: 나누는 수를 20 -> 50으로 늘려서 마우스 반응 둔하게 만듦
             const x = (window.innerWidth / 2 - e.pageX) / 50;
             const y = (window.innerHeight / 2 - e.pageY) / 50;
             moveLayers(x, y);
         });
 
-        // 권한 요청
-        function requestAccess() {
-            btn.style.opacity = '0';
-            setTimeout(() => { btn.style.display = 'none'; }, 300);
-		
-		fadeInAudio(bgm); // 🎵 음악 재생 시작!
+        // 5. 버튼 클릭 시 실행 (메인 기능)
+        btn.addEventListener('click', function() {
+            // 버튼 숨기기
+            btn.style.display = 'none';
 
+            // 음악 재생 시도
+            if(bgm) fadeInAudio(bgm);
+
+            // 아이폰(iOS 13+) 권한 요청
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission()
                     .then(permissionState => {
@@ -148,20 +174,10 @@ function fadeInAudio(audio) {
                     })
                     .catch(console.error);
             } else {
+                // 안드로이드 및 PC는 바로 실행
                 window.addEventListener('deviceorientation', handleOrientation);
             }
-        }
-
-        btn.addEventListener('click', requestAccess);
-        
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') {
-             window.addEventListener('deviceorientation', handleOrientation);
-             btn.style.display = 'none';
-        }
-
-	<audio id="bgm" loop>
-    		<source src="music.mp3" type="audio/mp3">
-	</audio>
+        });
     </script>
 </body>
 </html>
