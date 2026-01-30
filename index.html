@@ -74,12 +74,13 @@
     <div class="art-container" id="artContainer">
         <div class="layer bg" data-speed="1"></div>   <div class="layer mid" data-speed="2"></div>  <div class="layer fore" data-speed="4"></div> </div>
 
-    <button id="permissionBtn">구경하기(Touch)</button>
+    <button id="permissionBtn">들어가기(Touch)</button>
 
     <script>
         const btn = document.getElementById('permissionBtn');
         const layers = document.querySelectorAll('.layer');
         const container = document.getElementById('artContainer');
+	const bgm = document.getElementById('bgm'); // 음악 플레이어 가져오기
 
         // 움직임 처리 함수
         function moveLayers(x, y) {
@@ -90,6 +91,20 @@
                 layer.style.transform = `translate(${xMove}px, ${yMove}px)`;
             });
         }
+	// 음악이 서서히 켜지는 함수
+function fadeInAudio(audio) {
+    audio.volume = 0; // 0에서 시작
+    audio.play();
+    let vol = 0;
+    const interval = setInterval(() => {
+        if (vol < 0.8) {
+            vol += 0.05;
+            audio.volume = vol;
+        } else {
+            clearInterval(interval);
+        }
+    }, 200);
+}
 
         // 모바일 센서 처리
         function handleOrientation(event) {
@@ -103,7 +118,7 @@
                 
                 // ⭐ 수정됨: 0.5 -> 0.15 (센서 민감도를 확 낮춤) ⭐
                 // 이제 폰을 많이 기울여야 조금 움직입니다.
-                moveLayers(limitedX * 0.25, limitedY * 0.30); 
+                moveLayers(limitedX * 0.25, limitedY * 0.25); 
             }
         }
 
@@ -119,6 +134,8 @@
         function requestAccess() {
             btn.style.opacity = '0';
             setTimeout(() => { btn.style.display = 'none'; }, 300);
+		
+		fadeInAudio(bgm); // 🎵 음악 재생 시작!
 
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission()
@@ -141,6 +158,10 @@
              window.addEventListener('deviceorientation', handleOrientation);
              btn.style.display = 'none';
         }
+
+	<audio id="bgm" loop>
+    		<source src="music.mp3" type="audio/mp3">
+	</audio>
     </script>
 </body>
 </html>
