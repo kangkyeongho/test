@@ -30,17 +30,17 @@
         /* 3. 레이어 공통 스타일 */
         .layer {
             position: absolute;
-            top: -5%;
-            left: -5%;
-            width: 110%;
-            height: 110%;
+            top: -20%;
+            left: -20%;
+            width: 140%;
+            height: 140%;
             
             /* ⭐ 수정됨: 바닥을 기준으로 정렬 (긴 그림 깨짐 방지) ⭐ */
             background-size: cover; 
             background-position: center; 
             background-repeat: no-repeat;
             
-            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 반응 속도 살짝 늦춰서 더 부드럽게 */
+            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 반응 속도 살짝 늦춰서 더 부드럽게 */
             will-change: transform;
         }
 
