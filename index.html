@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Parallax Art</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f4f1ea;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: sans-serif;
+        }
+
+        /* 그림 컨테이너 */
+        .art-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* 레이어 공통 스타일 */
+        .layer {
+            position: absolute;
+            top: -10%;      /* 여백을 줘서 움직일 때 빈 공간 안 보이게 */
+            left: -10%;
+            width: 120%;    /* 화면보다 커야 움직여도 안 잘림 */
+            height: 120%;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover; /* 혹은 contain */
+            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 부드러운 감속 */
+            will-change: transform;
+        }
+
+        /* --- 이미지 경로 설정 --- */
+        .bg { 
+            background-image: url('https://via.placeholder.com/1000x1500/333355/ffffff?text=Background'); 
+            z-index: 1; 
+        }
+        .mid { 
+            background-image: url('https://via.placeholder.com/1000x1500/aa5555/ffffff?text=House'); 
+            z-index: 2; 
+        }
+        .fore { 
+            background-image: url('https://via.placeholder.com/1000x1500/55aa55/ffffff?text=Grass'); 
+            z-index: 3; 
+        }
+
+        /* iOS 권한 요청 버튼 (처음엔 보임) */
+        #permissionBtn {
+            position: absolute;
+            z-index: 100;
+            background: #5a3e36;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="art-container">
+        <div class="layer bg" data-speed="2"></div>   <div class="layer mid" data-speed="5"></div>  <div class="layer fore" data-speed="10"></div> </div>
+
+    <button id="permissionBtn">작품 감상하기 (Touch)</button>
+
+    <script>
+        const btn = document.getElementById('permissionBtn');
+        const layers = document.querySelectorAll('.layer');
+
+        // 1. 센서 데이터 처리 함수
+        function handleOrientation(event) {
+            // beta: 앞뒤 기울기 (-180 ~ 180) -> Y축
+            // gamma: 좌우 기울기 (-90 ~ 90) -> X축
+            const x = event.gamma; 
+            const y = event.beta;  
+
+            // 각도가 너무 크면 제한 (최대 45도까지만 반응)
+            // 모바일에서 너무 휙휙 돌아가는 것 방지
+            const limitedX = Math.max(-45, Math.min(45, x));
+            const limitedY = Math.max(-45, Math.min(45, y));
+
+            layers.forEach(layer => {
+                const speed = layer.getAttribute('data-speed');
+                
+                // 움직임 계산 (반대 방향으로 움직여야 깊이감이 생김)
+                // speed 값을 곱해서 레이어마다 다르게 이동
+                const xMove = -(limitedX * speed * 0.5); 
+                const yMove = -(limitedY * speed * 0.5); 
+
+                layer.style.transform = `translate(${xMove}px, ${yMove}px)`;
+            });
+        }
+
+        // 2. 권한 요청 및 이벤트 연결 (iOS 13+ 대응)
+        function requestAccess() {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                // iOS 13 이상
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientation);
+                            btn.style.display = 'none'; // 허용되면 버튼 숨기기
+                        } else {
+                            alert('센서 권한을 허용해야 그림이 움직입니다.');
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // 안드로이드 및 구형 iOS (권한 필요 없음)
+                window.addEventListener('deviceorientation', handleOrientation);
+                btn.style.display = 'none';
+            }
+        }
+
+        // 버튼 클릭 시 권한 요청 실행
+        btn.addEventListener('click', requestAccess);
+
+        // (옵션) 안드로이드는 버튼 안 눌러도 시작되게 시도
+        if (typeof DeviceOrientationEvent.requestPermission !== 'function') {
+            requestAccess();
+        }
+    </script>
+</body>
+</html>
