@@ -106,6 +106,8 @@
             100% { transform: translateX(-50%); } /* 정확히 절반만 이동하고 처음으로 텔레포트 */
         }
 
+	cursor: pointer;
+
     </style>
 </head>
 <body>
@@ -200,6 +202,17 @@
                 window.addEventListener('deviceorientation', handleOrientation);
             }
         });
+
+	musicBadge.addEventListener('click', function() {
+            if (bgm.paused) {
+                bgm.play(); // 음악이 꺼져있으면 -> 재생
+                musicBadge.style.opacity = '1'; // 배지를 밝게
+            } else {
+                bgm.pause(); // 음악이 켜져있으면 -> 정지
+                musicBadge.style.opacity = '0.4'; // 배지를 흐리게 (꺼진 느낌)
+            }
+        });
+
     </script>
 </body>
 </html>
