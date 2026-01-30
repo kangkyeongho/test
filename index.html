@@ -5,75 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Modern Boy's Art</title>
     <style>
-        /* 1. 화면 기본 설정 */
+        /* 1. 화면 설정 */
         body {
             margin: 0;
             padding: 0;
             height: 100vh;
-            overflow: hidden; /* 스크롤 방지 */
-            background-color: #f4f1ea; /* 배경색 */
+            overflow: hidden;
+            background-color: #f4f1ea;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: sans-serif;
+            font-family: 'Apple SD Gothic Neo', sans-serif;
         }
 
         .art-container {
             position: relative;
             width: 100%;
             height: 100%;
-            max-width: 800px; /* PC에서 너무 커짐 방지 */
+            max-width: 800px;
             overflow: hidden;
         }
 
-        /* 2. 그림 레이어 스타일 */
+        /* 2. 그림 레이어 */
         .layer {
             position: absolute;
-            /* 움직일 여백 확보를 위해 120%로 설정 */
             width: 140%;
             height: 140%;
-            top: -20%;  /* 중앙 정렬 보정 */
+            top: -20%;
             left: -20%;
-            
-            /* ⭐ 가로 폭을 화면에 딱 맞춤 (너무 확대되는 것 방지) ⭐ */
-            background-size: 100% auto; 
-            
-            /* 그림 위치: 중앙 기준 */
+            background-size: 100% auto; /* 가로폭 맞춤 */
             background-position: center; 
             background-repeat: no-repeat;
-            
-            /* 움직임 부드럽게 */
             transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             will-change: transform;
         }
 
-        /* 3. 이미지 파일 연결 (파일명 정확히!) */
         .bg { background-image: url('bg.png'); z-index: 1; }
         .mid { background-image: url('mid.png'); z-index: 2; }
         .fore { background-image: url('fore.png'); z-index: 3; }
 
-        /* 4. 입장 버튼 스타일 */
+        /* 3. 입장 버튼 */
         #permissionBtn {
             position: absolute;
-            z-index: 9999; /* 제일 위에 오도록 설정 */
-            top: 50%;
-            left: 50%;
+            z-index: 9999;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            
-            background-color: #a63737; /* 버튼 색 */
+            background-color: #a63737;
             color: white;
             border: none;
             padding: 15px 40px;
             border-radius: 50px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            
-            /* 터치 영역 확보 */
             min-width: 200px;
-            text-align: center;
         }
+
+        /* 4. 🎵 우측 상단 음악 제목 (NEW) */
+        .music-badge {
+            position: absolute;
+            top: 20px;          /* 위에서 20px 띄움 */
+            right: 20px;        /* 오른쪽에서 20px 띄움 */
+            z-index: 1000;      /* 그림보다 위에 */
+            
+            width: 150px;       /* 텍스트가 보일 창의 너비 */
+            height: 30px;
+            background: rgba(255, 255, 255, 0.7); /* 반투명 흰색 배경 */
+            backdrop-filter: blur(5px); /* 배경 흐림 효과 (유리 느낌) */
+            border-radius: 20px; /* 둥근 모서리 */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            
+            display: flex;
+            align-items: center;
+            overflow: hidden;   /* 상자 밖으로 나가는 글자 숨김 */
+            padding: 5px 10px;
+            opacity: 0;         /* 처음엔 숨김 (버튼 누르면 나타남) */
+            transition: opacity 1s;
+        }
+
+        /* 흐르는 텍스트 애니메이션 */
+        .music-text {
+            white-space: nowrap; /* 줄바꿈 금지 */
+            font-size: 0.9rem;
+            color: #555;
+            font-weight: 600;
+            display: inline-block;
+            padding-left: 100%;  /* 오른쪽 끝에서 시작 */
+            animation: scroll-left 8s linear infinite; /* 8초 동안 흘러가기 반복 */
+        }
+
+        @keyframes scroll-left {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-250%, 0); } /* 왼쪽으로 쭉 이동 */
+        }
+
     </style>
 </head>
 <body>
@@ -84,29 +110,31 @@
         <div class="layer fore" data-speed="4"></div>
     </div>
 
-    <button id="permissionBtn" type="button">들어가기(Click)</button>
+    <div class="music-badge" id="musicBadge">
+        <div class="music-text">
+            🎵 Now Playing: Relaxing Piano Music - 편안한 오후의 산책
+        </div>
+    </div>
+
+    <button id="permissionBtn" type="button">들어가기</button>
 
     <audio id="bgm" loop>
         <source src="music.mp3" type="audio/mp3">
     </audio>
 
     <script>
-        // 변수 가져오기
         const btn = document.getElementById('permissionBtn');
         const layers = document.querySelectorAll('.layer');
         const container = document.getElementById('artContainer');
         const bgm = document.getElementById('bgm');
+        const musicBadge = document.getElementById('musicBadge'); // 배지 가져오기
 
-        // 1. 음악 페이드 인 함수
         function fadeInAudio(audio) {
             try {
                 audio.volume = 0;
                 const playPromise = audio.play();
-                
-                // 브라우저 정책상 재생 실패할 경우 대비
                 if (playPromise !== undefined) {
                     playPromise.then(_ => {
-                        // 재생 성공 시 볼륨 올리기
                         let vol = 0;
                         const interval = setInterval(() => {
                             if (vol < 0.8) {
@@ -116,65 +144,52 @@
                                 clearInterval(interval);
                             }
                         }, 200);
-                    }).catch(error => {
-                        console.log("음악 재생 실패(파일 경로 확인): " + error);
-                    });
+                    }).catch(err => console.log(err));
                 }
-            } catch (e) {
-                console.log("오디오 오류: " + e);
-            }
+            } catch (e) { console.log(e); }
         }
 
-        // 2. 그림 움직임 계산 함수
         function moveLayers(x, y) {
             layers.forEach(layer => {
                 const speed = layer.getAttribute('data-speed');
-                const xMove = -(x * speed); 
-                const yMove = -(y * speed);
-                layer.style.transform = `translate(${xMove}px, ${yMove}px)`;
+                layer.style.transform = `translate(${-(x * speed)}px, ${-(y * speed)}px)`;
             });
         }
 
-        // 3. 모바일 센서 처리 함수
         function handleOrientation(event) {
-            const x = event.gamma; // 좌우 기울기
-            const y = event.beta;  // 앞뒤 기울기
-            
+            const x = event.gamma; 
+            const y = event.beta;
             if (x !== null && y !== null) {
-                const limitedX = Math.max(-45, Math.min(45, x));
-                const limitedY = Math.max(-45, Math.min(45, y));
-                moveLayers(limitedX * 0.15, limitedY * 0.15); // 감도 0.15
+                const limitX = Math.max(-45, Math.min(45, x));
+                const limitY = Math.max(-45, Math.min(45, y));
+                moveLayers(limitX * 0.20, limitY * 0.30);
             }
         }
 
-        // 4. PC 마우스 처리 함수
         container.addEventListener('mousemove', (e) => {
             const x = (window.innerWidth / 2 - e.pageX) / 50;
             const y = (window.innerHeight / 2 - e.pageY) / 50;
             moveLayers(x, y);
         });
 
-        // 5. 버튼 클릭 시 실행 (메인 기능)
+        // 버튼 클릭 시 실행
         btn.addEventListener('click', function() {
-            // 버튼 숨기기
             btn.style.display = 'none';
+            
+            // 음악 제목 배지 서서히 나타나기
+            musicBadge.style.opacity = '1';
 
-            // 음악 재생 시도
             if(bgm) fadeInAudio(bgm);
 
-            // 아이폰(iOS 13+) 권한 요청
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission()
                     .then(permissionState => {
                         if (permissionState === 'granted') {
                             window.addEventListener('deviceorientation', handleOrientation);
-                        } else {
-                            alert('센서 권한을 허용해야 그림이 움직입니다.');
                         }
                     })
                     .catch(console.error);
             } else {
-                // 안드로이드 및 PC는 바로 실행
                 window.addEventListener('deviceorientation', handleOrientation);
             }
         });
